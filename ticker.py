@@ -1,6 +1,9 @@
 import yfinance as yf
 import pandas as pd
 import streamlit as st
+from dotenv import load_dotenv
+import alpaca_trade_api as tradeapi
+from MCForecastTools import MCSimulation
 
 st.title('Portfolio Closing Prices')
 
@@ -22,6 +25,7 @@ timeframe = st.selectbox('Select Timeframe', list(timeframes.keys()))
 # Get closing prices using Yahoo Finance API
 df_portfolio = yf.download(ticker, period=timeframes[timeframe], group_by='ticker')
 st.dataframe(df_portfolio)
+
 # Review the first 5 rows of the Yahoo Finance DataFrame
 st.write(df_portfolio.head())
 
