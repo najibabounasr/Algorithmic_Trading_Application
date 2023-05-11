@@ -114,7 +114,6 @@ tenacity==8.2.2
 tensorboard==2.11.2
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
-tensorflow-macos==2.11.0
 termcolor==2.2.0
 toml==0.10.2
 toolz==0.12.0
