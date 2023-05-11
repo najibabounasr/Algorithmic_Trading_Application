@@ -1,4 +1,17 @@
-def setup_alpaca(alpaca_api_key=, alpaca_secret_key=)):
+# Import the required libraries and dependencies:
+import streamlit as st
+import pandas as pd
+import numpy as np
+import requests
+from dotenv import load_dotenv
+import alpaca_trade_api as tradeapi
+import os
+from datetime import datetime, timedelta
+import base64
+from pathlib import Path
+
+
+def setup_alpaca(alpaca_api_key=, alpaca_secret_key=):
     # Import the required libraries and dependencies
     import streamlit as st
     import pandas as pd
@@ -42,7 +55,7 @@ def setup_alpaca(alpaca_api_key=, alpaca_secret_key=)):
     
 # Create a function, that assigns specific weights to each asset in the portfolio:
 @st.cache_data
- def get_weights():
+def get_weights():
     from funcs.save_inputs import save_inputs
     # Get the tickers from the save_inputs function
     tickers, selected_timeframe, selected_start_date = save_inputs(selected_symbols, selected_timeframe, selected_start_date)
@@ -70,12 +83,11 @@ def apply_weights(weights):
             df_weighted_portfolio[ticker] = df_weighted_portfolio[ticker] * weights[i] / 100
         # Return the weighted portfolio DataFrame
         return df_weighted_portfolio
-    
 
-    if st.button('Get Weight'):
-        # Call the function to get the weights
-        weights = get_weights()
-        # Call the function to apply the weights
-        df_weighted_portfolio = apply_weights(weights)
-        # Display the DataFrame
-        st.dataframe(df_weighted_portfolio)
+        if st.button('Get Weight'):
+            # Call the function to get the weights
+            weights = get_weights()
+            # Call the function to apply the weights
+            df_weighted_portfolio = apply_weights(weights)
+            # Display the DataFrame
+            st.dataframe(df_weighted_portfolio)

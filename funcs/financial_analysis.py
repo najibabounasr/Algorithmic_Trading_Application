@@ -64,7 +64,7 @@ def get_benchmark_returns():
     # # Create a benchmark_returns_df DataFrame:
     benchmark_returns_df = benchmark_df['pct_change']
     #  Drop the NaN values from the DataFrame
-    benchmark_returns_df = benchmark_returns_df.dropna()
+    # benchmark_returns_df = benchmark_returns_df.dropna()
     
     # Create a .csv file called 'benchmark_df.csv' in the data folder:
     benchmark_df.to_csv('data/benchmark_df.csv')
@@ -158,10 +158,6 @@ def calculate_sortino_ratio(df_weighted_portfolio):
 # Create a function that calculates the portfolio returns:
 @st.cache_data
 def calculate_returns(df_weighted_portfolio):
-    #Import the required libraries and dependencies
-    import streamlit as st
-    import pandas as pd
-    import numpy as np
     # Calculate the daily returns of the portfolio
     daily_returns = df_weighted_portfolio.sum(axis=1)
     # Calculate the cumulative returns of the portfolio

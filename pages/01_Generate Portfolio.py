@@ -64,6 +64,7 @@ def save_inputs(selected_symbols, selected_timeframe, selected_start_date):
     tickers = [asset.symbol for asset in filtered_assets]
     st.write(f"these are the tickers: {tickers}")
     st.session_state['tickers'] = tickers
+    st.session_state['tickers'] = tickers
     st.session_state['selected_symbols'] = selected_symbols
     st.session_state['selected_timeframe'] = selected_timeframe
     return tickers, selected_timeframe, selected_start_date
@@ -79,9 +80,10 @@ def get_portfolio_data(tickers, selected_timeframe, selected_start_date):
         st.session_state['timeframe'] = timeframe
     elif selected_timeframe == 'Week':
         timeframe = str('1Week')
-        st
+        st.session_state['timeframe'] = timeframe
     elif selected_timeframe == 'Month':
         timeframe = str('1Month')
+        st.session_state['timeframe'] = timeframe
     else:
         st.error('Invalid timeframe selected')
         
@@ -140,10 +142,16 @@ if st.button('Create Portfolio'):
     # Concatenate the DataFrames
     df_assets = df_tickers.dropna().copy()
 
+    # Create MultiIndex for column labels
+    mi = pd.MultiIndex.from_tuples([(ticker, col) for ticker in tickers for col in df_assets.columns.levels[1]])
+
+    # Set MultiIndex as column labels
+    df_assets.columns = mi
+
     # Save the file
-    filename = 'portfolio.csv'
+    filename = 'portfolio_data.csv'
     st.session_state['filename'] = filename
-    filepath = Path(f'folder/subfolder/{filename}')
+    filepath = Path(f'data/{filename}')
     st.session_state['filepath'] = filepath  
     filepath.parent.mkdir(parents=True, exist_ok=True)  
     df_assets.to_csv(filepath)  
@@ -156,14 +164,14 @@ if st.button('Create Portfolio'):
     # Prepare a new empty dictionary to store dataframes:
     bench_dfs = {}
 
-    bench_tickers = ['SPY', 'QQQ', 'DIA']
+    bench_tickers = ['SPY']
 
     # Separate ticker data and store in dictionary
     for ticker in bench_tickers:
         df = df_portfolio[df_portfolio['symbol']==ticker].drop('symbol', axis=1)
         dfs[ticker] = df
 
-    df_bench_tickers = pd.read_csv("data/benchmark_returns.csv")
+    df_bench_tickers = pd.read_csv("data/benchmark_df.csv")
     
 
     # Concatenate the ticker DataFrames
@@ -178,17 +186,24 @@ if st.button('Create Portfolio'):
     df_bench_tickers.to_csv(bench_filepath)
     st.success(f"'{bench_filename}' has been saved in the folder/subfolder/ directory!")
 
-
+    tickers, selected_timeframe, selected_start_date = save_inputs(selected_symbols, selected_timeframe, selected_start_date)
     # Save the benchmark_returns df 
     benchmark_returns = get_benchmark_returns()
     st.session_state['benchmark_returns'] = benchmark_returns
 
 if st.button('Display Benchmark Returns Dataframe'):
 # Explain what benchmark returns are used for:
-        st.write("Benchmark returns are used to compare the performance of your portfolio to the performance of the market. The benchmark returns are calculated using the following ETFs: SPY, QQQ, and DIA.")
+        st.write("Benchmark returns are used to compare the performance of your portfolio to the performance of the market. The benchmark returns are calculated using the S&P 500 index.")
         # Display the benchmark data dataframe:
         bench_filename = 'benchmark_df.csv'
-        df_bench_tickers = Path(f'data/{bench_filename}')
+        df_bench_tickers = pd.read_csv(
+            Path(f'data/{bench_filename}'),
+            index_col='timestamp',
+            parse_dates=True,
+            infer_datetime_format=True
+        )
+        # Add a title ontop of the dataframe:
+        st.title('S&P 500 Benchmark Returns Dataframe')
         st.dataframe(df_bench_tickers)
 
 
