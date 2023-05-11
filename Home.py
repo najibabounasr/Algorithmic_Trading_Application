@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 import base64
 from pathlib import Path  
-
+from dotenv import load_dotenv
 
 # Set the page config
 st.set_page_config(
