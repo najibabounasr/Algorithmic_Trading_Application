@@ -340,7 +340,7 @@ elif option == "Summary Statistics":
         ${int(mean)} by the end of the simulation period. 
         This would mean that the investment would have
         grown by ${int(growth)} over the period.
-        This is a change of {pct_change}%.
+        This is a change of {pct_change}% across the portfolio.
 
 
         {ticker} Results:
