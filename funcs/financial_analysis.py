@@ -58,19 +58,26 @@ def get_benchmark_returns():
         start = start_date,
         end = end_date
     ).df
-
-    benchmark_df['pct_change'] = benchmark_df['close'].pct_change()
+    benchmark_close = pd.DataFrame(benchmark_df['close'])
+    # Calculate the daily returns of the benchmark
+    benchmark_returns = pd.DataFrame()
+    benchmark_returns = benchmark_df['close'].pct_change().dropna()
+    # Add the daily returns to the benchmark_df DataFrame, as the last column
+    benchmark_df['daily returns'] = benchmark_returns
     st.session_state['benchmark_df'] = benchmark_df # Save the benchmark_df to the session state
     # # Create a benchmark_returns_df DataFrame:
-    benchmark_returns_df = benchmark_df['pct_change']
+    benchmark_returns_df = benchmark_df['daily returns']
     #  Drop the NaN values from the DataFrame
     # benchmark_returns_df = benchmark_returns_df.dropna()
     
     # Create a .csv file called 'benchmark_df.csv' in the data folder:
-    benchmark_df.to_csv('data/benchmark_df.csv')
+    benchmark_df.to_csv('data/benchmark/benchmark_df.csv')
     
     # Create a .csv file called 'benchmark_returns.csv' in the data folder:
-    benchmark_returns_df.to_csv('data/benchmark_returns.csv')
+    benchmark_returns_df.to_csv('data/benchmark/benchmark_returns.csv')
+
+    # Create a .csv file called 'benchmark_close.csv' in the data folder:
+    benchmark_close.to_csv('data/benchmark/benchmark_close.csv')
 
     # Return the dataframes
     return benchmark_df, benchmark_returns_df
@@ -111,7 +118,7 @@ def calculate_variance(df_weighted_portfolio):
 @st.cache_data
 def calculate_beta(df_weighted_portfolio):
     # Load benchmark returns from CSV
-    benchmark_returns = pd.read_csv('data/benchmark_returns.csv', index_col=0, parse_dates=True)
+    benchmark_returns = pd.read_csv('data/benchmark/benchmark_returns.csv', index_col=0, parse_dates=True)
     # Calculate the daily returns of the portfolio
     daily_returns = df_weighted_portfolio.sum(axis=1)
     st.session_state['daily_returns'] = daily_returns

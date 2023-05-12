@@ -10,7 +10,7 @@ import base64
 from pathlib import Path
 import sqlalchemy  
 from funcs.financial_analysis import calculate_volatility, calculate_variance, calculate_beta, calculate_sharpe_ratio, calculate_returns, plot_returns
-
+import yfinance as yf
 
 timeframe = st.session_state['timeframe']
 end_date = st.session_state['end_date']
@@ -41,7 +41,12 @@ for ticker in tickers:
     df.to_csv(f"data/individual_dfs/{ticker}_df.csv")
 
      
-
+df_portfolio = alpaca.get_bars(
+    tickers,
+    timeframe,
+    start = start_date,
+    end = end_date
+).df
 
 
 
@@ -91,7 +96,7 @@ from funcs.financial_analysis import calculate_volatility, calculate_variance, c
 # Create a dataframe that contains the closing prices of the FAANG stocks
 # This dataframe will be used to calculate the portfolio returns:
 
-sp500_df = pd.read_csv("data/benchmark_df.csv",
+sp500_df = pd.read_csv("data/benchmark/benchmark_df.csv",
                         index_col = [0],
                         parse_dates = True,
                         infer_datetime_format = True,)
@@ -154,27 +159,25 @@ st.markdown("---")
 
 # Start by Getting the weights:
 # Prompt the user for the weights of each asset in their portfolio:
-st.header("Portfolio Weights")
+st.sidebar.header("Portfolio Weights")
+
 # Create a dictionary to hold the weights of each asset
 weights = {}
+
 # Create a for loop that will prompt the user for the weight of each asset
 for ticker in tickers:
-    tickers = st.session_state['tickers']
-    weights[ticker] = st.number_input(f"What is the weight of {ticker} in your portfolio? (Please enter a value between 0 and 1)", min_value=0.0, max_value=1.0, value=0.2, step=0.1)
+    weights[ticker] = st.sidebar.number_input(f"What is the weight of {ticker} in your portfolio? (Please enter a value between 0 and 1)", min_value=0.0, max_value=1.0, value=0.2, step=0.1)
     # add functionality, so that the weights of the assets add up to 1
 
-    # Create a dataframe that holds the weights of each asset
-    df_weights = pd.DataFrame(weights, index=[0])
-    # Also Create a list that holds the weights of each asset:
-    
-    # Make sure that te dataframe is labeled correctly, with the asset ticker as the column name
-    df_weights = df_weights.T
-    df_weights.columns = ['weights']
-    df_transposed_weights = df_weights
-    df_weights = df_weights.transpose()
-    weights = df_weights.to_dict('records')[0]
+# Create a dataframe that holds the weights of each asset
+df_weights = pd.DataFrame(weights, index=[0])
 
-
+# Make sure that the dataframe is labeled correctly, with the asset ticker as the column name
+df_weights = df_weights.T
+df_weights.columns = ['weights']
+df_transposed_weights = df_weights
+df_weights = df_weights.transpose()
+weights = df_weights.to_dict('records')[0]
 
 # Display the dataframe in the Streamlit app
 if sum(weights.values()) > 1:
@@ -192,8 +195,9 @@ initial_investment = pd.DataFrame()
 # Fihd out how much the value of the initial investment is:
 for ticker in tickers:
     initial_investment[f"{ticker}_initial_investment"] = investment * df_weights[ticker]
-st.success("Your initial investments:")
+st.write(" - Your initial investments:")
 st.dataframe(initial_investment)
+st.session_state['initial_investment'] = initial_investment
 
 # Initialize a dataframe that will hold the calculated metrics:
 # This dataframe will hold any metrics that are calculated using the closing prices of the assets in the portfolio, such as returns. 
@@ -208,27 +212,43 @@ location = 3
 # Create the closing prices df:
 for ticker in tickers:
     df = pd.DataFrame()
-    df[ticker] = curated_df.iloc[:, location]
-    col_name = f"{ticker}_close"
-    closing_prices_df.loc[:, col_name] = df[ticker]
+    try:
+        df[ticker] = curated_df.iloc[:,location]
+    except IndexError:
+        st.error(f"These are the tickers you selected: {tickers}")
+        st.error(f"""Error: The index {location} is out of bounds for the DataFrame.
+                    This is possibly due to one of the selected tickers not having 
+                    any data (API error). Please try again with  different tickers.
+                    Alpaca generally works best with more established companies.""")
+        continue
+    # col_name = f"{ticker}"
+    # closing_prices_df.loc[:, col_name] = df[ticker]
+    closing_prices_df.loc[:,f"{ticker}_close"] = df[ticker]
     col_name = f"{ticker}_weighted_price"
     location = location + 7 
+    
 
+df_portfolio = pd.DataFrame(curated_df)
 
 
 # Remove the first two rows of the closing_prices_df:
-closing_prices_df = closing_prices_df.iloc[2:, :]
+# closing_prices_df = closing_prices_df.iloc[2:, :]
 closing_prices_df.to_csv("data/grouped_dfs/closing_prices_df.csv")
+# Concatenate first two rows with original df
+first_two_rows = closing_prices_df.iloc[:1]
+closing_prices_df = pd.concat([first_two_rows, closing_prices_df])
+# remove the first row of the dataframe:
+closing_prices_df = closing_prices_df.iloc[2:, :]
+
+st.write(" - Closing Prices:")
+st.dataframe(closing_prices_df)
 # Comvert the values of the column to floats:
 for ticker in tickers:
     closing_prices_df[f"{ticker}_close"] = closing_prices_df[f"{ticker}_close"].astype(float)
 
-# Create a streamlit button, with mutliple options for the user to choose from:
-# The user will be able to choose which metrics they would like to calculate, and the app will display the metrics in a dataframe.
-# The user will also be able to choose which metrics they would like to display in a graph.
+closing_prices_df.to_csv("data/grouped_dfs/closing_prices_df.csv")
 
 
-# (initial_investment.loc[:,f"{ticker}_initial_investment"].values[0]
 
 
 daily_returns_df = pd.DataFrame()
@@ -294,7 +314,7 @@ average_annual_return = daily_returns_df.mean() * trading_days
 sharpe_ratios = average_annual_return / annualized_std
 sharpe_ratios.sort_values()
 
-st.markdown("---")
+
 
 
 
@@ -323,59 +343,120 @@ st.markdown("""
 
 
 """)
+            
 for ticker in tickers:
     ticker = closing_prices_df[f"{ticker}_close"]
     options = tickers
 
-option = st.selectbox("Generate Summary Statistics For:", options)
+option = st.selectbox("Select Asset:", options)
 
-if st.button("Generate Summary Statistics:"):
-    st.write(f"Summary Statistics for {option}:")
+# Get data for the 10-year Treasury yield from Yahoo Finance
+risk_free_data = yf.Ticker("^TNX").history(period="1d")
+
+
+# Extract the latest risk-free rate
+risk_free_rate = risk_free_data["Close"][-1] / 100.0
+risk_free_rate = float(risk_free_rate)
+df_sliced = pd.DataFrame()
+df_returns = pd.DataFrame()
+df_annualized_returns = pd.DataFrame()
+
+option_2 = st.selectbox("Generate Summary Statistics", ["Selected Asset", "Portfolio", "Compare Assets"])
+
+if option_2 == "Selected Asset":
+    df = pd.read_csv(f"data/individual_dfs/{option}_df.csv")
+    st.subheader(f"  Summary Statistics for {option}:")
     df = pd.read_csv(f"data/individual_dfs/{option}_df.csv")
     # select only the 'close' 
     df_sliced = df['close']
-    std = df_sliced.std()
+    df_returns = df_sliced.pct_change().dropna()
+    portfolio_annualized_return = ((1+ df_returns.mean())**252)-1
+    excess_return = portfolio_annualized_return - float(risk_free_rate)
+    portfolio_annualized_return = portfolio_annualized_return * 100
+    std = df_returns.std()
     st.balloons()
-    st.title(f"Summary Statistics for {option}:")
+    st.write(" - Sumary Statistics Based on Closing Prices")
     st.write(df_sliced.describe())
-    st.write(f"Standard Deviation: {std}")
+    st.write(f" - Standard Deviation: {std}")
     # Calculate the annualized standard deviation (252 trading days)
     annualized_std = std * np.sqrt(252)
-    st.write(f"Annualized Standard Deviation: {annualized_std}")
+    st.write(f" - Annualized Standard Deviation: {annualized_std}")
     # Calculate the annualized volatility (252 trading days)
     annualized_volatility = annualized_std * np.sqrt(252)
-    st.write(f" Annualized Volatility : {annualized_volatility}")
-    # Calculate the Sharpe Ratio
-    sharpe_ratio = (df_sliced.mean() * 252) / (annualized_std)
-    st.write(f"Sharpe Ratio : {sharpe_ratio}")
+    st.write(f" - Annualized Volatility : {annualized_volatility}")
+    st.write(f" - Annualized Returns: {portfolio_annualized_return}")
+    st.write(f" - Excess Return: {excess_return}")
+    # Calculate the Sharspe Ratio
+    portfolio_annualized_volatility = df_returns.std() * np.sqrt(252)
+    sharpe_ratio = excess_return / portfolio_annualized_volatility
+    st.write(f" - Sharpe Ratio : {sharpe_ratio}")
     # Calculate the Sortino Ratio
-    sortino_ratio = (df_sliced.mean() * 252) / (annualized_std)
-    st.write(f"The asset in question also has a Sortino Ratio of: {sortino_ratio}")
-
-
-
-st.subheader(f" {option} Prices")
-st.dataframe(df)
-
-if st.button("Compare Assets"):
+    downside_returns = df_returns[df_returns < 0]
+    downside_deviation = np.sqrt(np.mean(downside_returns**2))
+    sortino_ratio = (df_returns.mean() - risk_free_rate) / downside_deviation
+    st.write(f" - Sortino Ratio : {sortino_ratio}")
+elif option_2 == "Portfolio":
+    st.subheader(f"  Summary Statistics for Entire Portfolio:")
+    df = pd.read_csv(f"data/grouped_dfs/closing_prices_df.csv", index_col="timestamp", parse_dates=True, infer_datetime_format=True)
+    # select only the 'close' 
+    df_sliced = df
+    df_returns = df_sliced.pct_change().dropna()
+    portfolio_annualized_return = ((1+ df_returns.mean())**252)-1
+    excess_return = portfolio_annualized_return - float(risk_free_rate)
+    portfolio_annualized_return = portfolio_annualized_return * 100
+    std = df_returns.std()
+    st.balloons()
+    st.write(" - Sumary Statistics Based on Closing Prices")
+    st.write(df_sliced.describe())
+    st.write(f" - As of {end_date}, the risk free rate is: {risk_free_rate}")
+    st.write(f" - Excess Return: {excess_return}")
+    st.write(f" - Standard Deviation: {std}")
+    # Calculate the annualized standard deviation (252 trading days)
+    annualized_std = std * np.sqrt(252)
+    st.write(f" - Annualized Standard Deviation: {annualized_std}")
+    # Calculate the annualized volatility (252 trading days)
+    annualized_volatility = annualized_std * np.sqrt(252)
+    st.write(f" - Annualized Volatility : {annualized_volatility}")
+    st.write(f" - Annualized Returns: {portfolio_annualized_return}")
+    # Calculate the Sharpe Ratio
+    portfolio_annualized_volatility = df_returns.std() * np.sqrt(252)
+    sharpe_ratio = excess_return / portfolio_annualized_volatility
+    st.write(f" - Sharpe Ratio : {sharpe_ratio}")
+    # Calculate the Sortino Ratio
+    downside_returns = df_returns[df_returns < 0]
+    downside_deviation = np.sqrt(np.mean(downside_returns**2))
+    sortino_ratio = (df_returns.mean() - risk_free_rate) / downside_deviation
+    st.write(f" - The asset in question also has a Sortino Ratio of: {sortino_ratio}")
+elif option_2 == "Compare Assets":
     trading_days = 252
     st.write("Comparing Assets")
-    df = pd.read_csv(f"data/grouped_dfs/closing_prices_df.csv")
-    st.write(df.describe())
-    annualized_std = daily_returns_df.std() * np.sqrt(trading_days)
-    annualized_std.sort_values()
-    average_annual_return = daily_returns_df.mean() * trading_days 
-    st.write("Average Annual Returns:")
-    st.write(average_annual_return.sort_values())
-    sharpe_ratios = average_annual_return / annualized_std
-    sharpe_ratios.sort_values()
-    st.write("Sharpe Ratios")
-    st.write(sharpe_ratios.sort_values())
+    df = pd.read_csv(f"data/grouped_dfs/closing_prices_df.csv", index_col="timestamp", parse_dates=True, infer_datetime_format=True)
+    df_returns = df.pct_change().dropna()
+    tickers = st.session_state['tickers']
+    st.write(" - Sumary Statistics Based on Closing Prices")
+    st.write(df_returns.describe())
+    std = pd.DataFrame()
+    annualized_std = pd.DataFrame()
+    for ticker in tickers:
+        std[f'{ticker}'] = df_returns.std()
+        annualized_std[f'{ticker}'] = std[f'{ticker}'] * np.sqrt(trading_days)  
+    # transpose the annualized_std dataframe
+    annualized_std = annualized_std.T
+    # rename the index column
+    annualized_std.index.names = ['Ticker']
+    st.write(" - Annualized Standard Deviation:")
+    st.write(annualized_std)
+    # Calculate the annualized volatility (252 trading days)
+    annualized_volatility = annualized_std * np.sqrt(252)
+    st.write(f" - Annualized Volatility :")
+    st.write(annualized_volatility)
+else:
+    st.write(":pencil: Using the selectbox to generate summary statitsics!")
 
 
 
 
-
+tickers = st.session_state["tickers"]
 
 
 st.markdown("---")
@@ -415,9 +496,9 @@ elif option == "Portfolio Dataframe":
 elif option == "Closing Prices":
      st.subheader(f"Closing Prices:")
      st.dataframe(closing_prices_df)
-elif option == "Weighted Data":
+elif option == "Weighted Data  ":
     st.write("Weighted Data:")
-    st.dataframe(weighted_df)
+    st.dataframe
 elif option == "Daily Returns":
     st.subheader(f"Daily Returns:")
     st.dataframe(daily_returns_df)
@@ -437,7 +518,7 @@ else:
 st.markdown("---")
 
 # Read in the dataframes:
-benchmark_df = pd.read_csv("data//benchmark_df.csv")
+benchmark_df = pd.read_csv("data/benchmark/benchmark_df.csv")
 
 
 st.title(":chart_with_upwards_trend: View Plots")
@@ -445,7 +526,7 @@ st.title(":chart_with_upwards_trend: View Plots")
 options = ["Daily Returns", "Cumulative Returns", "Standard Deviation [Volatility]", "Closing Prices", "Sharpe Ratio", "Probability Distribution"]
 option = st.selectbox("Choose a Plot to display:", options)
 
-
+options_2 = ["Rolling 60-Day Returns", "Rolling 60-Day Covariance", "Rolling 60-Day Beta", "Rolling 60-Day Correlation", "Rolling 60-Day Variance"]
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 # Show different content based on the selected option
