@@ -1,8 +1,7 @@
 # Algorithmic Trading Model Generator
 Streamlit application, for informing trade-decisions
 
-
-[![alt text]](image-asset.png)
+![alt text](home_page.png)
 
 ## Background
 
