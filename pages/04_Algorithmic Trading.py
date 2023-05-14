@@ -29,6 +29,9 @@ from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
 import hvplot.pandas 
 import holoviews as hv
+import selenium
+from selenium import webdriver
+st.set_option('deprecation.showPyplotGlobalUse', False)
 # Initiate the model instance
 logreg_model = LogisticRegression()
 
@@ -359,17 +362,22 @@ opt_3 = st.selectbox("Visualize Model Performance", ["Strategy Returns", "Strate
 
 if opt_3 == "Strategy Returns":
     # Plot Strategy Returns to examine performance
-    ax = (1 + predictions['strategy_returns']).cumprod().plot()
-    st.pyplot()
-    # Save a .png image of the reconfigured algoritghm,
-    st.success("Plot Saved in data/algorithms") 
-    plt.savefig('01_tuned_baseline.png')
+    ax = (1 + predictions['strategy_returns']).cumprod().hvplot()
+    # st.pyplot()
+    st.bokeh_chart(hv.render(ax, backend='bokeh'))
+    if st.button("Save Plot"):
+        hv.save(ax, 'data/plots/strategy_returns.png', backend='bokeh')
+        # Save a .png image of the reconfigured algoritghm,
+        st.success("Plot Saved in data/plots!")
+        plt.show()
 elif opt_3 == "Strategy Returns vs. Actual Returns":
-    axax = ((1 + predictions[["actual_returns", "strategy_returns"]]).cumprod().plot())
-    st.pyplot()
-    # Save a .png image of the reconfigured algoritghm, 
-    st.success("Plot Saved in data/algorithms")
-    plt.savefig('02_tuned_baseline.png')
+    axax = ((1 + predictions[["actual_returns", "strategy_returns"]]).cumprod().hvplot())
+    st.bokeh_chart(hv.render(axax, backend='bokeh'))
+    if st.button("Save Plot"):
+        hv.save(axax, 'data/plots/strategy_vs_actual_returns.png', backend='bokeh')
+        # Save a .png image of the reconfigured algoritghm, 
+        st.success("Plot Saved in data/plots")
+        plt.show()
 elif opt_3 == "None":
     st.markdown(""" :ear: :eye: :lips: :eye:
     :eye: :lips: :eye:
@@ -383,17 +391,19 @@ else:
 
 st.markdown("---")
 
-st.title("Save Model")
+st.title("Trade Evaluation")
 
-
-###############UNRELATED:#########################################################################################################################################################################################################################################################
 initial_investment = st.session_state['initial_investment']
 weights = st.session_state['weights']
+if initial_investment is None:
+    raise ValueError("The initial investment is not set. Please set the initial investment in the sidebar. If the error persists, please try and set the initial investment in the previous pages.")
+if weights is None:
+    raise ValueError("The weights is not set. Please set the weights in the sidebar. If the error persists, please try and set the weights in the previous pages.")
+###############UNRELATED:#########################################################################################################################################################################################################################################################
 tickers = st.session_state['tickers']
 st.success(" :warning: You may readjust the initial investment and weights of the assets in the sidebar. :smile: ")
 st.sidebar.header("Portfolio Investment")
 investment = st.sidebar.number_input("How much do you intend on investing in your portfolio? ($)", min_value=1000, max_value=1000000, value=10000, step=1000)
-
 st.sidebar.markdown("---")
 # Create a dictionary to hold the weights of each asset
 weights = {}
@@ -648,15 +658,21 @@ if opt_final == "Visualize Strategy Performance":
     )
     # Display the plot in Streamlit
     st.bokeh_chart(hv.render(entry_exit_plot, backend='bokeh'))
+    # save the plot as a png file
+    hv.save(entry_exit_plot, 'data/plots/entry_exit_plot.png', backend='bokeh')
+    st.success("The plot has been saved to the data/plots folder as entry_exit_plot.png!")
 elif opt_final == "Performance Metrics":
     st.write(" - Tuned Model Performance")
+    signals_df['Portfolio Holdings'] = signals_df['close'] * signals_df['Signal']
+    signals_df['Entry/Exit'] = (signals_df['Entry/Exit'] / 2)
     st.dataframe(tuned_portfolio_evaluation_df)
-    signals_df['Entry/Exit Position'] = (signals_df['Portfolio Holdings'] * (signals_df['Entry/Exit']/2)) / signals_df['close']
+    signals_df['Entry/Exit Position'] = (signals_df['Portfolio Holdings'] * (signals_df['Entry/Exit'])) / signals_df['close']
 elif opt_final == "Trade Evaluation":
     st.write(" Signal Data")
+    signals_df['Entry/Exit'] = (signals_df['Entry/Exit'] / 2)
     signals_df['Portfolio Holdings'] = signals_df['close'] * signals_df['Signal']
-    st.dataframe(signals_df)
-    st.dataframe(predictions)
+    signals_df = signals_df.dropna()
+    signals_df['Entry/Exit Position'] = (signals_df['Portfolio Holdings'] * (signals_df['Entry/Exit'])) / signals_df['close']
     trade_evaluation_df = pd.DataFrame(
         columns=[
         'Stock',
@@ -682,13 +698,13 @@ elif opt_final == "Trade Evaluation":
     # Else if `Entry/Exit` is -1, set exit trade metrics and calculate profit
     # Then append the record to the trade evaluation DataFrame
     for index, row in signals_df.iterrows():
-        if row['Entry/Exit'] == 2:
+        if row['Entry/Exit'] == 1:
             entry_date = index
             entry_portfolio_holding = row['Portfolio Holdings']
             share_size = row['Entry/Exit Position']
             entry_share_price = row['close']
 
-        elif row['Entry/Exit'] == -2:
+        elif row['Entry/Exit'] == -1:
             exit_date = index
             exit_portfolio_holding = abs(row['close'] * row['Entry/Exit Position'])
             exit_share_price = row['close']
@@ -706,7 +722,40 @@ elif opt_final == "Trade Evaluation":
                     'Profit/Loss': profit_loss
                 },
                 ignore_index=True)
-    st.dataframe(trade_evaluation_df)
+    # trade_evaluation_df = trade_evaluation_df.set_index(pd.to_datetime(trade_evaluation_df['Entry Date'], infer_datetime_format=True)).drop(columns=['Entry Date'])
+    trade_evaluation_df.drop('Stock',axis=1,inplace=True)
+    trade_evaluation_df.drop('Shares',axis=1,inplace=True)
+    st.subheader(f" {asset} Trade Evaluation")
+    # save the dataframe to a csv file
+    trade_evaluation_df.to_csv(f'data/algorithm/{asset}_trade_evaluation.csv')
+
+    if st.button("Info"):
+        st.write("A trade evaluation dataframe is typically used to keep track of the performance of trades made in a portfolio. The dataframe usually includes columns for the stock symbol, the entry and exit dates, the number of shares traded, the entry and exit share prices, the entry and exit portfolio holdings, and the profit or loss incurred from the trade.")
+        st.write("In this case, we are only interested in the entry and exit dates, the entry and exit portfolio holdings, and the profit or loss incurred from the trade.")
+        st.write("By looking at the trade evaluation dataframe, you can see the details of each trade made in the portfolio, including when the trade was entered and exited, the price at which the shares were bought and sold, and how much profit or loss was incurred. This information can be useful in analyzing the overall performance of the portfolio, identifying trends in trading behavior, and making informed decisions about future trades.")
+    x = st.selectbox("Select the 'x' variable", ('Entry Date', 'Exit Date','Entry Share Price', 'Exit Share Price', 'Profit/Loss', 'Entry Portfolio Holding', 'Exit Portfolio Holding',))
+    y = st.selectbox("Select the 'y' variable", ('Entry Date', 'Exit Date','Entry Share Price', 'Exit Share Price', 'Profit/Loss', 'Entry Portfolio Holding', 'Exit Portfolio Holding',))
+    c = st.selectbox("Select the 'c' variable", ('Entry Share Price', 'Exit Share Price', 'Profit/Loss', 'Entry Portfolio Holding', 'Exit Portfolio Holding','None'))
+    trade_evaluation_df['Entry Date'] = pd.to_datetime(trade_evaluation_df['Entry Date'], infer_datetime_format=True)
+    trade_evaluation_df['Exit Date'] = pd.to_datetime(trade_evaluation_df['Exit Date'], infer_datetime_format=True)
+    # remove the first row of the dataframe
+    trade_evaluation_df = trade_evaluation_df.iloc[1:]
+    # set te index column name to'Trade'
+    trade_evaluation_df.index.name = 'Trade Number'
+    st.write(trade_evaluation_df)
+    if c == 'None':
+        c = None
+    ax = trade_evaluation_df.hvplot.scatter(
+        x=x,
+        y=y,
+        c=c,
+        colormap='viridis',
+    )
+    st.bokeh_chart(hv.render(ax, backend='bokeh'))
+    name = st.text_input("Enter the name of the plot")
+    if st.button("Save Visualization"):
+        hv.save(ax, f"data/plots/{name}.png", fmt="png")
+        st.success(f"Plot saved successfully to data/plots as {name}.png")
 elif opt_final == "Backtesting":
     # Use a classification report to evaluate the model using the predictions and testing data
     report = classification_report(y_test, pred)
@@ -719,3 +768,5 @@ elif opt_final == "Predictions":
     st.write(f"A the end of the timeperiod, we are left with a total of (USD){predictions_df['Portfolio Holdings'].iloc[-1]:.2f}, which is a return of (USD){predictions_df['Portfolio Holdings'].iloc[-1] - predictions_df['Portfolio Holdings'].iloc[0]:.2f}")
 else:
     st.write(":eye:")
+
+st.title("Save Model")

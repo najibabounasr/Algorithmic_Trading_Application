@@ -15,7 +15,6 @@ import datetime
 
 # Define Streamlit app
 st.title(':bank: Portfolio Generator')
-st.warning(':warning: Please note that the app is still in development and most assets will not generate data yet!. :warning:')
 
 # Load the environment variables from the .env file
 #by calling the load_dotenv function

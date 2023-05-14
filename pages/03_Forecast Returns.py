@@ -88,10 +88,10 @@ st.subheader("Weights:")
 
 # Display the dataframe in the Streamlit app
 if sum(weights.values()) > 1:
-        st.warning("Your weights add up to more than 1, please adjust your weights.")
+        st.warning("Your weights add up to more than 1, please adjust your weights in the sidebar.")
         
 elif sum(weights.values()) < 1:
-        st.warning("Your weights add up to less than 1, please adjust your weights.")
+        st.warning("Your weights add up to less than 1, please adjust your weights in the sidebar.")
         
 else:
         st.success("Your weights add up to 1, you may proceed.")
@@ -111,10 +111,10 @@ for ticker in tickers:
 st.subheader("Your initial investments:")
 st.dataframe(initial_investment)
 st.session_state['initial_investment'] = initial_investment
+st.warning("NOTE: Running the Monte Carlo simulation may take a few minutes. More simulations may require more time. Please be patient. if you are using the forecast only for educational purposes, it is recomended that you limit the number of simulations to 1000. The default number of simulations is 500.")
+num_simulation = st.slider("Enter the number of simulation to run:", 0, 5000)
 
-num_simulation = st.slider("Enter the number of simulation to run:", 0, 500)
 
-st.warning("NOTE: Running the Monte Carlo simulation may take a few minutes. More simulations may require more time.")
 num_trading_days = st.slider("Enter the number of years to forecast:", 0, 30)
 
 
@@ -161,7 +161,7 @@ price_df = alpaca.get_bars(
     end=end_date,
 ).df
 
-opts = st.multiselect("Select which variables you remove from the dataframe",("open", "high", "low", "volume", "trade_count", "vwap") )
+opts = st.multiselect("Remove Features from Dataframe",("open", "high", "low", "volume", "trade_count", "vwap") )
 st.markdown(""" NOTE: Only the 'close' variable is required for the forecast to run.
                     For accurate results, remove the other features. 
 
