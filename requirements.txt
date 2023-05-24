@@ -11,4 +11,3 @@ yfinance
 matplotlib
 scikit-learn
 selenium
-webdriver
