@@ -21,7 +21,8 @@ st.set_page_config(
 
 st.title(":money_with_wings: MarketMaven :money_with_wings:")
 
-
+st.write(" Please refer to the project README.md for a detailed description of the project, and the project's functionality. ")
+st.markdown(" [README.md](https://github.com/najibabounasr/MarketMaven) ")
 
 st.sidebar.markdown("""
 # Market Maven
