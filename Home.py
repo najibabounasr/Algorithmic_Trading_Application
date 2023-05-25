@@ -19,9 +19,24 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.title(":money_with_wings: Algorithmic Trading App")
-st.subheader("Developed by Najib Abou Nasr")
-st.write("Using Monte Carlo simulation to forecast returns!")   
+st.title(":money_with_wings: MarketMaven :money_with_wings:")
+
+
+
+st.sidebar.markdown("""
+# Market Maven
+
+## Developed by *Najib Abou Nasr*
+
+[My Linkedin](https://www.linkedin.com/in/najib-abou-nasr-a43520258/)
+
+[My GitHub](https://github.com/najibabounasr)
+""")
+                    
+st.markdown("""
+![Image](https://www.master-of-finance.org/wp-content/uploads/2020/06/What-Does-a-Stockbroker-Do-1024x683.jpg)
+""")
+
 
 # Create a st.markdown header for the app, including a describption refernecing the alpaca API's link, posting an image of the BUC Fintech bootcamp logo, and with links to my github 'najibabounasr':
 st.markdown(
@@ -38,23 +53,30 @@ st.markdown(
 
 st.markdown(
     """
-    ## This is my algorithmic trading application, developed with the UC Berkeley Fintech Bootcamp
-    
-    * This application uses the Alpaca API to pull stock data and forecast returns using Monte Carlo simulation.
-    * It also uses the Streamlit library to create the user interface.
-    * Deployed on Heroku, the app is also open source and available on my [GitHub](https://github.com/najibabounasr/UCB_Project_2.git).
-    * The application is for educational purposes only.
-    
-    
-    [Alpaca API](https://alpaca.markets/docs/api-documentation/)
-    
-    [Linkedin](https://www.linkedin.com/in/najib-abou-nasr-a43520258/)
+    ## Background
 
-    ![Image](https://www.master-of-finance.org/wp-content/uploads/2020/06/What-Does-a-Stockbroker-Do-1024x683.jpg)
+This project aims to create a financial analysis app built with the Streamlit framework. The app allows users to select a portfolio of stocks, adjust the weights of each stock in the portfolio, and analyze various financial metrics of the portfolio. The code retrieves historical stock data from the Alpaca API and calculates various metrics such as volatility, variance, beta, and Sharpe ratio using functions from a separate financial analysis module. The app displays the portfolio data as well as the data for individual stocks in the portfolio in dataframes, and provides explanations of the financial metrics displayed. The app also uses a Monte Carlo simulation to forecast returns based on the historical data. Finally, the app prompts users to learn more about portfolios and financial metrics by providing links to relevant Investopedia articles. 
+
+The application will allow users to quickly and easily interact with live stock data, and add stocks together to create customizable portfolios, with the added functionality of indicating the specific asset weights, and initial investment value for each asset in the portfolio. 
+
+The application pulls is live stock data via. the Alpaca API, and creates a dataframe with the assets information over the specified timeframe. The API data is pulled in in real-time-- data as recent as one day prior may be pulled in, which is a limitation of utilizing the free Alpaca paper account. 
+
+The project may be used to generate summary statistics, and retrieve historical trends data from numerous assets, and also allows for assets to be compared to one-another, meaning the application's functionality exceeds that of a simple portfolio curator, as the application is not meant to curate a portfolio, and is instead meant to inform trade decisions. 
+
+The project focuses on utilizing stock data to train different algorithmic trading models, which will try and predict trade signal calls. The user may directly interact with both the short and long moving averages, aswell as the choose the specific sklearn model they wish to fit to the training data. By reviewing the summary statistics and numerous visualization options available, this project aims to provide users with an understanding of backtesting, model training, and model optimization for algorithmic trading. The main segment of the application, and the focus of the whole project is the 'Algoritmic Trading' Page.
+    
+
     """,
     unsafe_allow_html=True,
 )
 
+
+st.markdown("""
+        
+[Alpaca API](https://alpaca.markets/docs/api-documentation/)
+    
+
+""")
 
 # Initialize the session state for the app
 # This will allow us to store data between app runs
