@@ -11,3 +11,4 @@ yfinance
 matplotlib
 scikit-learn
 selenium
+hvplot
