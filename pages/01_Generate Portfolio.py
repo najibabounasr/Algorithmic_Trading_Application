@@ -276,7 +276,10 @@ df_transposed_weights = df_weights
 df_weights = df_weights.transpose()
 weights = df_weights.to_dict('records')[0]
 
-
+st.session_state['weights'] = weights
+st.session_state['df_weights'] = df_weights
+st.session_state['df_transposed_weights'] = df_transposed_weights
+st.session_state['tickers'] = tickers
 
 
     
