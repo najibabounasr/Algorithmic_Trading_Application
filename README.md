@@ -1,4 +1,4 @@
-# Algorithmic Trading Model Generator
+# MarketMaven
 Streamlit application, for informing trade-decisions
 
 ![alt text](images/home_page.png)
