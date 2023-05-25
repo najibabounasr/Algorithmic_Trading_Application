@@ -9,11 +9,11 @@ from datetime import datetime, timedelta
 import base64
 from pathlib import Path  
 from dotenv import load_dotenv
-
+from funcs.financial_analysis import get_benchmark_returns
 
 # Set the page config
 st.set_page_config(
-    page_title="Algorithmic Trading App",
+    page_title="MarketMaven",
     page_icon=":chart_with_upwards_trend:",
     layout="wide",
     initial_sidebar_state="expanded",
