@@ -121,7 +121,11 @@ def get_portfolio_data(tickers, selected_timeframe, selected_start_date):
     return df_portfolio, start_date, end_date, timeframe
     
 
-
+df_portfolio, start_date, end_date, timeframe = get_portfolio_data(tickers, selected_timeframe, selected_start_date)
+st.session_state['df_portfolio'] = df_portfolio
+st.session_state['start_date'] = start_date
+st.session_state['end_date'] = end_date
+st.session_state['timeframe'] = timeframe
 
 
 # Create a Streamlit button for Generating Data
