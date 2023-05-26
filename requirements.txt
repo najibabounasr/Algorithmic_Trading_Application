@@ -12,4 +12,4 @@ matplotlib
 scikit-learn
 selenium
 hvplot
-bokeh==2.4.0
+bokeh
