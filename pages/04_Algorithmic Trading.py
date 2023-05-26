@@ -34,7 +34,7 @@ from selenium import webdriver
 st.set_option('deprecation.showPyplotGlobalUse', False)
 # Initiate the model instance
 logreg_model = LogisticRegression()
-
+hv.extension('bokeh',logo=False)
 
 timeframe = st.session_state['timeframe']
 end_date = st.session_state['end_date']
