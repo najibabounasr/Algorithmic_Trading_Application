@@ -102,7 +102,7 @@ def get_portfolio_data(tickers, selected_timeframe, selected_start_date):
 
 
     st.session_state['start_date'] = start_date
-    end_date = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    end_date = (datetime.date.today() - datetime.timedelta(days=2)).isoformat()
     st.session_state['end_date'] = end_date
     # Get closing prices for each ticker
     df_portfolio = alpaca.get_bars(
