@@ -24,6 +24,8 @@ st.title(":money_with_wings: MarketMaven :money_with_wings:")
 st.write(" Please refer to the project README.md for a detailed description of the project, and the project's functionality. ")
 st.markdown(" [README.md](https://github.com/najibabounasr/MarketMaven) ")
 
+st.warning(" Most Important of all: Please open each page in a top-down fashion, as the pages are interdependent, and many variables are shared between pages.")
+
 st.sidebar.markdown("""
 # Market Maven
 
